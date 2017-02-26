@@ -23,9 +23,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -80,13 +78,17 @@ public class UserControllerTest {
     @Test
     public void shouldSaveNewReceivedUser() throws Exception {
         User user = new User("username", "firstName", "lastName");
-        user.setId(42L);
         JSONObject newUserAsJson = new JSONObject();
         newUserAsJson.accumulate("username", user.getUsername());
         newUserAsJson.accumulate("firstName", user.getFirstName());
         newUserAsJson.accumulate("lastName", user.getLastName());
 
-        when(userService.save(any(User.class))).thenReturn(user);
+        when(userService.save(any(User.class)))
+                .then(invocationOnMock -> {
+                    User savedUser = invocationOnMock.getArgumentAt(0, User.class);
+                    savedUser.setId(42L);
+                    return savedUser;
+                });
 
         mockMvc.perform(post("/user")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -102,5 +104,25 @@ public class UserControllerTest {
     public void shouldDeleteUser() throws Exception {
         mockMvc.perform(delete("/user/{id}", 42))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    public void shouldUpdateUser() throws Exception {
+        User user = new User("username", "firstName", "lastName");
+        JSONObject newUserAsJson = new JSONObject();
+        newUserAsJson.accumulate("username", user.getUsername());
+        newUserAsJson.accumulate("firstName", user.getFirstName());
+        newUserAsJson.accumulate("lastName", user.getLastName());
+
+        when(userService.save(any(User.class)))
+                .then(invocationOnMock -> invocationOnMock.getArgumentAt(0, User.class));
+
+        mockMvc.perform(put("/user/{id}", 42l)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(newUserAsJson.toString()))
+                .andExpect(jsonPath("$.id", is(42)))
+                .andExpect(jsonPath("$.username", is("username")))
+                .andExpect(jsonPath("$.firstName", is("firstName")))
+                .andExpect(jsonPath("$.lastName", is("lastName")));
     }
 }
