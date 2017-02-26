@@ -21,7 +21,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Getter
+    @Getter @Setter
     private Long id;
 
     @Getter @Setter(AccessLevel.PRIVATE)
